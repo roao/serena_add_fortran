@@ -75,7 +75,13 @@ class GetSymbolsOverviewTool(Tool, ToolMarkerSymbolicRead):
             raise ValueError(f"Expected a file path, but got a directory path: {relative_path}. ")
         result = symbol_retriever.get_symbol_overview(relative_path)[relative_path]
         result_json_str = json.dumps([dataclasses.asdict(i) for i in result])
-        return self._limit_length(result_json_str, max_answer_chars)
+        
+        # Use smart length limiting with context for symbols
+        context_info = {
+            "file_path": relative_path,
+            "symbol_count": len(result)
+        }
+        return self._smart_limit_length(result_json_str, max_answer_chars, "symbols", context_info)
 
 
 class FindSymbolTool(Tool, ToolMarkerSymbolicRead):
@@ -157,7 +163,16 @@ class FindSymbolTool(Tool, ToolMarkerSymbolicRead):
         )
         symbol_dicts = [_sanitize_symbol_dict(s.to_dict(kind=True, location=True, depth=depth, include_body=include_body)) for s in symbols]
         result = json.dumps(symbol_dicts)
-        return self._limit_length(result, max_answer_chars)
+        
+        # Use smart length limiting with context for symbol search
+        context_info = {
+            "name_path": name_path,
+            "depth": depth,
+            "include_body": include_body,
+            "symbol_count": len(symbols),
+            "relative_path": relative_path
+        }
+        return self._smart_limit_length(result, max_answer_chars, "symbols", context_info)
 
 
 class FindReferencingSymbolsTool(Tool, ToolMarkerSymbolicRead):

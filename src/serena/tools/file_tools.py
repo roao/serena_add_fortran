@@ -400,4 +400,12 @@ class SearchForPatternTool(Tool):
             assert match.source_file_path is not None
             file_to_matches[match.source_file_path].append(match.to_display_string())
         result = json.dumps(file_to_matches)
-        return self._limit_length(result, max_answer_chars)
+        
+        # Use smart length limiting with context for better suggestions
+        context_info = {
+            "pattern": substring_pattern,
+            "context_lines": context_lines_before + context_lines_after,
+            "file_count": len(file_to_matches),
+            "total_matches": len(matches)
+        }
+        return self._smart_limit_length(result, max_answer_chars, "search", context_info)

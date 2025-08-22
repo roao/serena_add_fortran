@@ -2,6 +2,7 @@ import json
 
 from serena.config.context_mode import SerenaAgentMode
 from serena.tools import Tool, ToolMarkerDoesNotRequireActiveProject, ToolMarkerOptional
+from serena.tools.smart_recommender import get_tool_recommendation
 
 
 class ActivateProjectTool(Tool, ToolMarkerDoesNotRequireActiveProject):
@@ -81,3 +82,43 @@ class GetCurrentConfigTool(Tool, ToolMarkerOptional):
         Print the current configuration of the agent, including the active and available projects, tools, contexts, and modes.
         """
         return self.agent.get_current_config_overview()
+
+
+class RecommendToolTool(Tool, ToolMarkerOptional):
+    """
+    Recommends the most suitable tools based on your query and project characteristics.
+    """
+
+    def apply(self, query_description: str) -> str:
+        """
+        Get intelligent tool recommendations based on what you want to accomplish.
+        This helps you choose the most appropriate tool and parameters for your task.
+
+        :param query_description: Description of what you want to do (e.g., "find all functions named calculate", 
+            "search for error handling patterns", "explore project structure")
+        :return: Recommended tools with explanations and suggested parameters
+        """
+        # Gather project context information
+        project_info = {}
+        language = None
+        
+        if hasattr(self, 'project') and self.project:
+            try:
+                # Get project language if available
+                if hasattr(self.project, 'project_config') and self.project.project_config:
+                    language = getattr(self.project.project_config, 'language', None)
+                    if language:
+                        language = str(language).lower()
+                
+                # Get basic project statistics
+                # This could be enhanced with actual file counting
+                project_info = {
+                    "language": language,
+                    "has_active_project": True
+                }
+            except Exception:
+                # Fallback if project info is not available
+                pass
+        
+        recommendations = get_tool_recommendation(query_description, project_info, language)
+        return recommendations

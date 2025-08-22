@@ -222,6 +222,67 @@ class Tool(Component):
                 + "Please try a more specific tool query or raise the max_answer_chars parameter."
             )
         return result
+    
+    @staticmethod
+    def _smart_limit_length(result: str, max_answer_chars: int, result_type: str = "generic", 
+                           context_info: dict = None) -> str:
+        """
+        Enhanced result length limiting with smart suggestions and auto-chunking support.
+        
+        :param result: The original result string
+        :param max_answer_chars: Maximum allowed characters
+        :param result_type: Type of result for specific handling (search, symbols, files, etc.)
+        :param context_info: Additional context for generating suggestions
+        :return: Processed result or suggestion message
+        """
+        if (n_chars := len(result)) <= max_answer_chars:
+            return result
+            
+        context_info = context_info or {}
+        
+        # Generate smart suggestions based on result type
+        suggestions = []
+        
+        if result_type == "search":
+            suggestions.extend([
+                "• Reduce context_lines_before and context_lines_after parameters",
+                "• Use more specific patterns or add file filters (paths_include_glob)",
+                "• Search within a specific directory using relative_path parameter",
+                "• Use restrict_search_to_code_files=true to exclude non-code files"
+            ])
+            
+            if context_info.get("pattern"):
+                suggestions.append(f"• Make pattern '{context_info['pattern']}' more specific")
+                
+        elif result_type == "symbols":
+            suggestions.extend([
+                "• Reduce depth parameter to get fewer nested symbols",
+                "• Set include_body=false to exclude symbol implementations",
+                "• Use more specific name_path or add symbol kind filters",
+                "• Search within a specific file using relative_path parameter"
+            ])
+            
+        elif result_type == "files":
+            suggestions.extend([
+                "• Use more specific file_mask pattern",
+                "• Limit search to a specific subdirectory",
+                "• Exclude certain file types or directories"
+            ])
+            
+        # Try automatic chunking for large results
+        chunk_info = ""
+        if result_type in ["search", "symbols"] and n_chars > max_answer_chars * 2:
+            # For very large results, provide chunking information
+            estimated_chunks = (n_chars // max_answer_chars) + 1
+            chunk_info = f"\n\nNote: This result would require approximately {estimated_chunks} chunks. "
+            chunk_info += "Consider using pagination or more selective queries."
+            
+        suggestion_text = "\n".join(suggestions) if suggestions else "Please refine your query."
+        
+        return (
+            f"The answer is too long ({n_chars:,} characters, limit: {max_answer_chars:,}). "
+            + f"Suggestions to reduce result size:\n{suggestion_text}{chunk_info}"
+        )
 
     def is_active(self) -> bool:
         return self.agent.tool_is_active(self.__class__)

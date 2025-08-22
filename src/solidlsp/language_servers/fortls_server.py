@@ -19,6 +19,71 @@ from solidlsp.ls_logger import LanguageServerLogger
 from solidlsp.lsp_protocol_handler.lsp_types import InitializeParams
 from solidlsp.lsp_protocol_handler.server import ProcessLaunchInfo
 from solidlsp.settings import SolidLSPSettings
+from solidlsp.ls_types import SymbolKind
+
+
+# Fortran-specific symbol kind mappings for better categorization
+FORTRAN_SYMBOL_KIND_MAPPING = {
+    # Fortran specific constructs mapped to appropriate LSP symbol kinds
+    'interface': SymbolKind.Interface,
+    'abstract_interface': SymbolKind.Interface,
+    'generic_interface': SymbolKind.Interface,
+    'namelist': SymbolKind.Variable,      # Namelists are treated as special variables
+    'common': SymbolKind.Namespace,       # Common blocks as namespaces
+    'block_data': SymbolKind.Module,      # Block data as modules
+    'derived_type': SymbolKind.Struct,    # Derived types as structures
+    'type_bound_procedure': SymbolKind.Method,  # Type-bound procedures as methods
+    'generic_procedure': SymbolKind.Function,   # Generic procedures as functions
+    'abstract_procedure': SymbolKind.Function,  # Abstract procedures as functions
+}
+
+# Fortran-specific search patterns for symbol recognition
+FORTRAN_SYMBOL_PATTERNS = {
+    'module': r'^\s*module\s+(\w+)',
+    'program': r'^\s*program\s+(\w+)',
+    'subroutine': r'^\s*(?:pure\s+|elemental\s+|impure\s+)?subroutine\s+(\w+)',
+    'function': r'^\s*(?:pure\s+|elemental\s+|impure\s+)?(?:integer|real|complex|logical|character|type\(\w+\))?\s*function\s+(\w+)',
+    'interface': r'^\s*(?:abstract\s+)?interface(?:\s+(\w+)|\s*$)',
+    'type': r'^\s*type(?:\s*,\s*(?:public|private|abstract|extends\(\w+\)))?\s*::\s*(\w+)',
+    'common': r'^\s*common\s*/(\w+)/',
+    'namelist': r'^\s*namelist\s*/(\w+)/',
+    'use_statement': r'^\s*use\s+(\w+)(?:\s*,\s*only\s*:\s*(.*?))?',
+    'include': r'^\s*#?include\s+["\']([^"\']+)["\']',
+}
+
+# Fortran search templates for common use cases
+FORTRAN_SEARCH_TEMPLATES = {
+    'find_module_procedures': {
+        'pattern': r'^\s*(?:contains|procedure)',
+        'description': 'Find module procedures and type-bound procedures',
+        'context_lines': 2
+    },
+    'find_use_statements': {
+        'pattern': r'^\s*use\s+(\w+)',
+        'description': 'Find module dependencies via use statements',
+        'context_lines': 0
+    },
+    'find_interfaces': {
+        'pattern': r'^\s*interface\s+(\w+)',
+        'description': 'Find generic interfaces and abstract interfaces',
+        'context_lines': 3
+    },
+    'find_derived_types': {
+        'pattern': r'^\s*type(?:\s*,.*?)?\s*::\s*(\w+)',
+        'description': 'Find derived type definitions',
+        'context_lines': 1
+    },
+    'find_common_blocks': {
+        'pattern': r'^\s*common\s*/(\w+)/',
+        'description': 'Find common block definitions',
+        'context_lines': 1
+    },
+    'find_preprocessor_directives': {
+        'pattern': r'^\s*#\w+',
+        'description': 'Find preprocessor directives like #include, #define',
+        'context_lines': 0
+    }
+}
 
 
 class FortlsServer(SolidLanguageServer):
