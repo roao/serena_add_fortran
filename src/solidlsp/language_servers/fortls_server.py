@@ -41,7 +41,7 @@ class FortlsServer(SolidLanguageServer):
             config,
             logger,
             repository_root_path,
-            ProcessLaunchInfo(cmd=f"{fortls_executable_path} --stdio", cwd=repository_root_path),
+            ProcessLaunchInfo(cmd=fortls_executable_path, cwd=repository_root_path),
             "fortran",
             solidlsp_settings,
         )
