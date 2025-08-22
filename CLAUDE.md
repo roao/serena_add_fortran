@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Test Markers:**
 Available pytest markers for selective testing:
-- `python`, `go`, `java`, `rust`, `typescript`, `php`, `csharp`, `elixir`, `terraform`, `clojure`, `swift`, `bash`, `ruby`
+- `python`, `go`, `java`, `rust`, `typescript`, `php`, `csharp`, `elixir`, `terraform`, `clojure`, `swift`, `bash`, `ruby`, `fortran`
 - `snapshot` - for symbolic editing operation tests
 
 **Project Management:**
@@ -65,6 +65,72 @@ Each supported language has:
 - **Contextual retrieval** based on relevance
 - **Onboarding support** for new projects
 
+## Fortran Support Enhancement
+
+Serena's Fortran support represents a comprehensive language integration designed specifically for scientific computing codebases. The implementation addresses unique challenges in analyzing large-scale Fortran projects through intelligent optimization and user experience enhancements.
+
+### Core Implementation
+
+**Language Server Integration**
+- **fortls-based LSP** - Uses Python-based Fortran Language Server for semantic analysis
+- **Automatic dependency management** - Installs fortls (>=3.0.0) via pip when needed  
+- **Fortran-specific symbol mapping** - Maps Fortran constructs to LSP symbol types:
+  - Modules → Module, Interfaces → Interface, Derived types → Struct
+  - Common blocks → Namespace, Namelists → Variable
+  - Type-bound procedures → Method, Generic procedures → Function
+
+**File Pattern Support**
+Comprehensive Fortran file extension matching:
+```
+*.f90, *.f95, *.f03, *.f08, *.f18, *.F90, *.F95, *.F03, *.F08, *.F, *.f, *.for, *.f77
+```
+
+### Intelligent User Experience Features
+
+**Smart Result Management (`tools_base.py`)**
+- **Context-aware length limiting** - Provides specific suggestions when results exceed limits
+- **Intelligent chunking recommendations** - Suggests parameter adjustments for optimal results
+- **Error recovery guidance** - Helps users refine queries instead of generic error messages
+
+**Tool Recommendation System (`smart_recommender.py`)**
+- **Query pattern recognition** - Classifies user intent (symbol search, text search, navigation)
+- **Project-aware suggestions** - Considers project size and language-specific patterns
+- **Fortran-specific templates** - Pre-configured search patterns for common Fortran constructs:
+  ```python
+  # Examples
+  "find_module_procedures": r"^\s*(?:contains|procedure)"
+  "find_use_statements": r"^\s*use\s+(\w+)"  
+  "find_derived_types": r"^\s*type(?:\s*,.*?)?\s*::\s*(\w+)"
+  ```
+
+**RecommendTool Integration (`config_tools.py`)**
+- Provides contextual tool recommendations based on query analysis
+- Reduces learning curve for complex tool parameter combinations
+- Offers Fortran-specific optimization tips
+
+### Fortran-Specific Optimizations
+
+**Scientific Computing Focus**
+- **Module dependency analysis** - Track `use` statements and module relationships
+- **Preprocessor directive support** - Handle `#include`, `#define` for legacy code
+- **Interface recognition** - Support for abstract interfaces and generic procedures
+- **Common block handling** - Legacy Fortran data sharing construct support
+
+**Search Pattern Templates**
+Pre-built patterns for common Fortran analysis tasks:
+- Module procedures and type-bound procedures
+- Generic and abstract interfaces  
+- Derived type definitions with parameterization
+- Common block definitions and usage
+- Preprocessor directives in mixed-language projects
+
+### Design Philosophy
+
+**Minimal Intrusion** - Follows existing LSP integration patterns without breaking compatibility
+**Progressive Enhancement** - Layers intelligent features on top of solid LSP foundation
+**User Experience First** - Addresses real-world pain points discovered through GENE project analysis
+**Scientific Computing Awareness** - Understands the unique characteristics of computational science codebases
+
 ## Development Patterns
 
 ### Adding New Languages
@@ -100,9 +166,11 @@ Configuration is loaded from (in order of precedence):
 - **Symbol-based editing** - Uses LSP for precise code manipulation
 - **Caching strategy** - Reduces language server overhead
 - **Error recovery** - Automatic language server restart on crashes
-- **Multi-language support** - 16+ languages with LSP integration
+- **Multi-language support** - 17+ languages with LSP integration (including Fortran)
 - **MCP protocol** - Exposes tools to AI agents via Model Context Protocol
 - **Async operation** - Non-blocking language server interactions
+- **Intelligent error handling** - Context-aware suggestions for large result sets and query optimization
+- **Scientific computing optimization** - Fortran-specific enhancements for computational science workflows
 
 ## Working with the Codebase
 
